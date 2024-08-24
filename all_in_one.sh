@@ -20,7 +20,7 @@ export PATH
 #
 # ——————————————————————————————————————————————————————————————————————————————————
 #
-DATE_VERSION="v1.7.2-2024_08_12_19_02"
+DATE_VERSION="v1.7.3-2024_08_17_15_25"
 #
 # ——————————————————————————————————————————————————————————————————————————————————
 amilys_embyserver_latest_version=4.8.8.0
@@ -1274,7 +1274,9 @@ function install_xiaoya_alist() {
             read -erp "PikPak_Username:" PikPak_Username
             INFO "输入你的 PikPak 账号密码"
             read -erp "PikPak_Password:" PikPak_Password
-            echo -e "\"${PikPak_Username}\" \"${PikPak_Password}\"" > ${CONFIG_DIR}/pikpak.txt
+            INFO "输入你的 PikPak X-Device-Id"
+            read -erp "PikPak_Device_Id:" PikPak_Device_Id
+            echo -e "\"${PikPak_Username}\" \"${PikPak_Password}\" \"web\" \"${PikPak_Device_Id}\"" > ${CONFIG_DIR}/pikpak.txt
         fi
     fi
 
@@ -1574,8 +1576,8 @@ function test_disk_capacity() {
         WARN "您已设置跳过磁盘容量检测"
         INFO "磁盘容量：${free_size_G}G"
     else
-        if [ "$free_size" -le 63886080 ]; then
-            ERROR "空间剩余容量不够：${free_size_G}G 小于最低要求140G"
+        if [ "$free_size" -le 230686720 ]; then
+            ERROR "空间剩余容量不够：${free_size_G}G 小于最低要求 220G"
             exit 1
         else
             INFO "磁盘容量：${free_size_G}G"
@@ -1771,17 +1773,11 @@ function unzip_xiaoya_emby() {
 
 function unzip_appoint_xiaoya_emby_jellyfin() {
 
-    if [ "${2}" == "emby" ]; then
-        file_name="all.mp4"
-    elif [ "${2}" == "jellyfin" ]; then
-        file_name="all_jf.mp4"
-    fi
-
     get_config_dir
 
     get_media_dir
 
-    if [ "${1}" == "${file_name}" ]; then
+    if [ "${1}" == "all.mp4" ] || [ "${1}" == "all_jf.mp4" ]; then
         INFO "请选择要解压的压缩包目录 [ 1:动漫 | 2:每日更新 | 3:电影 | 4:电视剧 | 5:纪录片 | 6:纪录片（已刮削）| 7:综艺 ]"
         valid_choice=false
         while [ "$valid_choice" = false ]; do
@@ -1819,6 +1815,32 @@ function unzip_appoint_xiaoya_emby_jellyfin() {
             UNZIP_FOLD=综艺
             ;;
         esac
+    elif [ "${1}" == "115.mp4" ]; then
+        INFO "请选择要解压的压缩包目录 [ 1:电视剧 | 2:电影 | 3:动漫 ]"
+        valid_choice=false
+        while [ "$valid_choice" = false ]; do
+            read -erp "请输入数字 [1-3]:" choice
+            for i in {1..3}; do
+                if [ "$choice" = "$i" ]; then
+                    valid_choice=true
+                    break
+                fi
+            done
+            if [ "$valid_choice" = false ]; then
+                ERROR "请输入正确数字 [1-3]"
+            fi
+        done
+        case $choice in
+        1)
+            UNZIP_FOLD=电视剧
+            ;;
+        2)
+            UNZIP_FOLD=电影
+            ;;
+        3)
+            UNZIP_FOLD=动漫
+            ;;
+        esac
     else
         ERROR "此文件暂时不支持解压指定元数据！"
     fi
@@ -1840,18 +1862,34 @@ function unzip_appoint_xiaoya_emby_jellyfin() {
 
     start_time1=$(date +%s)
 
-    if [ "${1}" == "${file_name}" ]; then
+    if [ "${1}" == "all.mp4" ] || [ "${1}" == "all_jf.mp4" ]; then
         extra_parameters="--workdir=/media/xiaoya"
 
         mkdir -p "${MEDIA_DIR}"/xiaoya
 
-        all_size=$(du -k ${MEDIA_DIR}/temp/${file_name} | cut -f1)
+        all_size=$(du -k ${MEDIA_DIR}/temp/${1} | cut -f1)
         if [[ "$all_size" -le 30000000 ]]; then
-            ERROR "${file_name} 下载不完整，文件大小(in KB):$all_size 小于预期"
+            ERROR "${1} 下载不完整，文件大小(in KB):$all_size 小于预期"
             exit 1
         else
-            INFO "${file_name} 文件大小验证正常"
-            pull_run_glue 7z x -aoa -mmt=16 /media/temp/${file_name} ${UNZIP_FOLD}/* -o/media/xiaoya
+            INFO "${1} 文件大小验证正常"
+            pull_run_glue 7z x -aoa -mmt=16 /media/temp/${1} ${UNZIP_FOLD}/* -o/media/xiaoya
+        fi
+
+        INFO "设置目录权限..."
+        chmod 777 "${MEDIA_DIR}"/xiaoya
+    elif [ "${1}" == "115.mp4" ]; then
+        extra_parameters="--workdir=/media/xiaoya"
+
+        mkdir -p "${MEDIA_DIR}"/xiaoya/115
+
+        all_size=$(du -k ${MEDIA_DIR}/temp/${1} | cut -f1)
+        if [[ "$all_size" -le 16000000 ]]; then
+            ERROR "${1} 下载不完整，文件大小(in KB):$all_size 小于预期"
+            exit 1
+        else
+            INFO "${1} 文件大小验证正常"
+            pull_run_glue 7z x -aoa -mmt=16 /media/temp/${1} 115/${UNZIP_FOLD}/* -o/media/xiaoya
         fi
 
         INFO "设置目录权限..."
@@ -2105,10 +2143,11 @@ function main_download_unzip_xiaoya_emby() {
     echo -e "9、解压 pikpak.mp4"
     echo -e "10、下载 115.mp4"
     echo -e "11、解压 115.mp4"
-    echo -e "12、当前下载器【aria2/wget】                  当前状态：${Green}${__data_downloader}${Font}"
+    echo -e "12、解压 115.mp4 的指定元数据目录【非全部解压】"
+    echo -e "13、当前下载器【aria2/wget】                  当前状态：${Green}${__data_downloader}${Font}"
     echo -e "0、返回上级"
     echo -e "——————————————————————————————————————————————————————————————————————————————————"
-    read -erp "请输入数字 [0-12]:" num
+    read -erp "请输入数字 [0-13]:" num
     case "$num" in
     1)
         clear
@@ -2140,7 +2179,7 @@ function main_download_unzip_xiaoya_emby() {
         ;;
     5)
         clear
-        unzip_appoint_xiaoya_emby "all.mp4" "emby"
+        unzip_appoint_xiaoya_emby_jellyfin "all.mp4"
         return_menu "main_download_unzip_xiaoya_emby"
         ;;
     6)
@@ -2186,6 +2225,11 @@ function main_download_unzip_xiaoya_emby() {
         return_menu "main_download_unzip_xiaoya_emby"
         ;;
     12)
+        clear
+        unzip_appoint_xiaoya_emby_jellyfin "115.mp4"
+        return_menu "main_download_unzip_xiaoya_emby"
+        ;;
+    13)
         if [ "${__data_downloader}" == "wget" ]; then
             echo 'aria2' > ${DDSREM_CONFIG_DIR}/data_downloader.txt
         elif [ "${__data_downloader}" == "aria2" ]; then
@@ -2202,7 +2246,7 @@ function main_download_unzip_xiaoya_emby() {
         ;;
     *)
         clear
-        ERROR '请输入正确数字 [0-12]'
+        ERROR '请输入正确数字 [0-13]'
         main_download_unzip_xiaoya_emby
         ;;
     esac
@@ -2678,7 +2722,7 @@ function main_download_unzip_xiaoya_jellyfin() {
         ;;
     5)
         clear
-        unzip_appoint_xiaoya_emby_jellyfin "all_jf.mp4" "jellyfin"
+        unzip_appoint_xiaoya_emby_jellyfin "all_jf.mp4"
         return_menu "main_download_unzip_xiaoya_jellyfin"
         ;;
     6)
@@ -4222,7 +4266,7 @@ function main_xiaoya_all_emby() {
         container_status=$(docker inspect --format='{{.State.Status}}' "$(cat ${DDSREM_CONFIG_DIR}/container_name/xiaoya_alist_name.txt)")
         case "${container_status}" in
         "running")
-            echo -e "\n"
+            echo
             ;;
         *)
             echo -e "\n${Red}警告：您的小雅容器未正常启动，请先检查小雅容器后再安装全家桶${Font}\n"
@@ -4231,17 +4275,18 @@ function main_xiaoya_all_emby() {
     else
         echo -e "${Red}\n警告：您未安装小雅容器，请先安装小雅容器后再安装全家桶${Font}\n"
     fi
-    echo -e "1、一键安装Emby全家桶"
-    echo -e "2、下载/解压 元数据"
-    echo -e "3、安装Emby（可选择版本）"
-    echo -e "4、替换DOCKER_ADDRESS（${Red}已弃用${Font}）"
-    echo -e "5、安装/更新/卸载 Resilio-Sync（${Red}已弃用${Font}）      当前状态：$(judgment_container "${xiaoya_resilio_name}")"
-    echo -e "6、立即同步小雅Emby config目录"
-    echo -e "7、创建/删除 同步定时更新任务                 当前状态：$(judgment_xiaoya_notify_status)"
-    echo -e "8、图形化编辑 emby_config.txt"
-    echo -e "9、安装/更新/卸载 小雅元数据定时爬虫          当前状态：$(judgment_container xiaoya-emd)"
-    echo -e "10、一键升级Emby容器（可选择镜像版本）"
-    echo -e "11、卸载Emby全家桶"
+    echo -ne "${INFO} 界面加载中...${Font}\r"
+    echo -e "1、一键安装Emby全家桶
+2、下载/解压 元数据
+3、安装Emby（可选择版本）
+4、替换DOCKER_ADDRESS（${Red}已弃用${Font}）
+5、安装/更新/卸载 Resilio-Sync（${Red}已弃用${Font}）      当前状态：$(judgment_container "${xiaoya_resilio_name}")
+6、立即同步小雅Emby config目录
+7、创建/删除 同步定时更新任务                 当前状态：$(judgment_xiaoya_notify_status)
+8、图形化编辑 emby_config.txt
+9、安装/更新/卸载 小雅元数据定时爬虫          当前状态：$(judgment_container xiaoya-emd)
+10、一键升级Emby容器（可选择镜像版本）
+11、卸载Emby全家桶"
     echo -e "0、返回上级"
     echo -e "——————————————————————————————————————————————————————————————————————————————————"
     read -erp "请输入数字 [0-11]:" num
@@ -5016,11 +5061,26 @@ function install_xiaoya_proxy() {
         config_dir=${CONFIG_DIR}
     fi
     INFO "小雅配置文件目录：${config_dir}"
+    container_run_extra_parameters=$(cat ${DDSREM_CONFIG_DIR}/container_run_extra_parameters.txt)
+    if [ "${container_run_extra_parameters}" == "true" ]; then
+        local RETURN_DATA
+        RETURN_DATA="$(data_crep "r" "install_xiaoya_proxy")"
+        if [ "${RETURN_DATA}" == "None" ]; then
+            INFO "请输入其他参数（默认 无 ）"
+            read -erp "Extra parameters:" extra_parameters
+        else
+            INFO "已读取您上次设置的参数：${RETURN_DATA} (默认不更改回车继续，如果需要更改请输入新参数)"
+            read -erp "Extra parameters:" extra_parameters
+            [[ -z "${extra_parameters}" ]] && extra_parameters=${RETURN_DATA}
+        fi
+        extra_parameters=$(data_crep "w" "install_xiaoya_proxy")
+    fi
     docker_pull "ddsderek/xiaoya-proxy:latest"
     docker run -d \
         --name=xiaoya-proxy \
         --restart=always \
         --net=host \
+        ${extra_parameters} \
         -e TZ=Asia/Shanghai \
         ddsderek/xiaoya-proxy:latest
     if [[ "${OSNAME}" = "macos" ]]; then
@@ -5728,17 +5788,27 @@ function reset_script_configuration() {
             echo -en "即将开始清理配置文件${Blue} $i ${Font}\r"
             sleep 1
         done
-        rm -rf ${DDSREM_CONFIG_DIR}/container_name
-        rm -f \
-            xiaoya_alist_tvbox_config_dir.txt \
-            xiaoya_alist_media_dir.txt \
-            xiaoya_alist_config_dir.txt \
-            resilio_config_dir.txt \
-            portainer_config_dir.txt \
-            onelist_config_dir.txt \
-            container_run_extra_parameters.txt \
-            auto_symlink_config_dir.txt \
-            data_downloader.txt
+        FILES_TO_REMOVE=(
+            "xiaoya_alist_tvbox_config_dir.txt"
+            "xiaoya_alist_media_dir.txt"
+            "xiaoya_alist_config_dir.txt"
+            "resilio_config_dir.txt"
+            "portainer_config_dir.txt"
+            "onelist_config_dir.txt"
+            "container_run_extra_parameters.txt"
+            "auto_symlink_config_dir.txt"
+            "data_downloader.txt"
+            "disk_capacity_detection.txt"
+            "xiaoya_connectivity_detection.txt"
+            "image_mirror.txt"
+            "image_mirror_user.txt"
+        )
+        for file in "${FILES_TO_REMOVE[@]}"; do
+            rm -f ${DDSREM_CONFIG_DIR}/$file
+        done
+        rm -rf \
+            ${DDSREM_CONFIG_DIR}/container_name \
+            ${DDSREM_CONFIG_DIR}/data_crep
         INFO "清理完成！"
 
         for i in $(seq -w 3 -1 0); do
@@ -5928,7 +5998,7 @@ function main_return() {
         fi
     fi
     echo -e "${out_tips}1、安装/更新/卸载 小雅Alist & 账号管理        当前状态：$(judgment_container "${xiaoya_alist_name}")
-2、安装/卸载 小雅Emby全家桶                   当前状态：$(judgment_container "${xiaoya_emby_name}")
+2、安装/更新/卸载 小雅Emby全家桶              当前状态：$(judgment_container "${xiaoya_emby_name}")
 3、安装/卸载 小雅Jellyfin全家桶               当前状态：$(judgment_container "${xiaoya_jellyfin_name}")
 4、安装/更新/卸载 小雅助手（xiaoyahelper）    当前状态：$(judgment_container xiaoyakeeper)
 5、安装/更新/卸载 小雅Alist-TVBox（非原版）   当前状态：$(judgment_container "${xiaoya_tvbox_name}")

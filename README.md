@@ -93,7 +93,8 @@ bash -c "$(curl --insecure -fsSL https://raw.githubusercontent.com/DDS-Derek/xia
 单独 解压 pikpak.mp4 -> 2 2 9
 单独 下载 115.mp4 -> 2 2 10
 单独 解压 115.mp4 -> 2 2 11
-选择 下载器【aria2/wget】-> 2 2 12
+解压 115.mp4 的指定元数据目录【非全部解压】-> 2 2 12
+选择 下载器【aria2/wget】-> 2 2 13
 单独 安装Emby（可选择版本，支持官方，amilys，lovechen）-> 2 3
 立即 同步小雅Emby的config目录 -> 2 6
 单独 创建/删除 同步定时更新任务 -> 2 7
@@ -190,41 +191,46 @@ Docker镜像源选择 -> 9 6
 | 小雅Cron容器（xiaoya-cron）  |        ✅         |         ✅         |        ✅        |
 | 小雅代理容器（xiaoya-proxy）  |        ✅         |         ✅         |        ✅        |
 | 115清理助手（xiaoya-115cleaner）  |        ✅         |         ✅         |        ✅        |
+| xiaoya-glue（官方 python） |        ✅         |         ✅         |        ❌        |
+| xiaoya-glue（官方 latest） |        ✅         |         ✅         |        ❌        |
+| xiaoya-glue（DDSRem python） |        ✅         |         ✅         |        ❌        |
+| xiaoya-glue（DDSRem aliyuntvtoken_connector） |        ✅         |         ✅         |        ❌        |
 
-|    系统名称     | main.sh | emby_config_editor.sh |
-| :-------------: | :-----: | :-------------------: |
-|   CentOS 7.9    |    ✅    |           ✅           |
-|   CentOS 8.4    |    ✅    |           ✅           |
-| CentOS 8 Stream |    ✅    |           ✅           |
-| CentOS 9 Stream |    ✅    |           ✅           |
-|   Debian 10.3   |    ✅    |           ✅           |
-|   Debian 11.3   |    ✅    |           ✅           |
-|   Debian 12.0   |    ✅    |           ✅           |
-|  Ubuntu 18.04   |    ✅    |           ✅           |
-|  Ubuntu 20.04   |    ✅    |           ✅           |
-|  Ubuntu 22.04   |    ✅    |           ✅           |
-|    Fedora 31    |    ✅    |           ✅           |
-|    Fedora 32    |    ✅    |           ✅           |
-|   AlmaLinux 9   |    ✅    |           ✅           |
-| RockyLinux 8.6  |    ✅    |           ✅           |
-|   Arch Linux    |    ✅    |           ✅           |
-|  openSUSE 15.4  |    ✅    |           ✅           |
-|     FreeBSD     |    ✅    |           ✅           |
-|     EulerOS     |    ✅    |           ✅           |
-|  Amazon Linux   |    ✅    |           ✅           |
-|     Alpine      |    ✅    |           ✅           |
-|      MacOS      |    🚧    |           🚧           |
-|     UnRaid      |    ✅    |           ✅           |
-| OpenMediaVault  |    ✅    |           ✅           |
-|      QNAP       |    ✅    |           ✅           |
-|     OpenWRT     |    ✅    |           ✅           |
-|    Synology     |    ✅    |           ✅           |
-|  TrueNAS CORE   |    🚧    |           🚧           |
-|  TrueNAS SCALE  |    🚧    |           🚧           |
-|      UGOS       |    ✅    |           ✅           |
-|     UGOS Pro    |    ✅    |           ✅           |
-|   LibreELEC     |    ❌    |           ❌           |
-|  Windows WSL Docker  |    ❌    |           ❌           |
+|    系统名称     | all_in_one.sh | emby_config_editor.sh | xiaoya_notify.sh |
+| :-------------: | :-----: | :-------------------: | :-------------: |
+|   CentOS 7.9    |    ✅    |           ✅           | ✅ |
+|   CentOS 8.4    |    ✅    |           ✅           | ✅ |
+| CentOS 8 Stream |    ✅    |           ✅           | ✅ |
+| CentOS 9 Stream |    ✅    |           ✅           | ✅ |
+|   Debian 10.3   |    ✅    |           ✅           | ✅ |
+|   Debian 11.3   |    ✅    |           ✅           | ✅ |
+|   Debian 12.0   |    ✅    |           ✅           | ✅ |
+|  Ubuntu 18.04   |    ✅    |           ✅           | ✅ |
+|  Ubuntu 20.04   |    ✅    |           ✅           | ✅ |
+|  Ubuntu 22.04   |    ✅    |           ✅           | ✅ |
+|    Fedora 31    |    ✅    |           ✅           | ✅ |
+|    Fedora 32    |    ✅    |           ✅           | ✅ |
+|   AlmaLinux 9   |    ✅    |           ✅           | ✅ |
+| RockyLinux 8.6  |    ✅    |           ✅           | ✅ |
+|   Arch Linux    |    ✅    |           ✅           | ✅ |
+|  openSUSE 15.4  |    ✅    |           ✅           | ✅ |
+|     FreeBSD     |    ✅    |           ✅           | ✅ |
+|     EulerOS     |    ✅    |           ✅           | ✅ |
+|  Amazon Linux   |    ✅    |           ✅           | ✅ |
+|     Alpine      |    ✅    |           ✅           | ✅ |
+|      MacOS      |    🚧    |           🚧           | 🚧 |
+|     UnRaid      |    ✅    |           ✅           | ✅ |
+| OpenMediaVault  |    ✅    |           ✅           | ✅ |
+|      QNAP（威联通）      |    ✅    |           ✅           | ✅ |
+|     OpenWRT     |    ✅    |           ✅           | ✅ |
+|    Synology（群晖）    |    ✅    |           ✅           | ✅ |
+|  TrueNAS CORE   |    🚧    |           🚧           | 🚧 |
+|  TrueNAS SCALE  |    🚧    |           🚧           | 🚧 |
+|      UGOS（绿联云）      |    ✅    |           ✅           | ✅ |
+|    UGOS Pro（绿联云 Pro）    |    ✅    |           ✅           | ✅ |
+|   LibreELEC     |    ❌    |           ❌           | ❌ |
+|  Windows WSL Docker  |    ❌    |           ❌           | ❌ |
+| ZSpace（极空间） | 🚧 | 🚧 | 🚧 |
 
 ## Star History
 
@@ -232,12 +238,12 @@ Docker镜像源选择 -> 9 6
 
 ## 小雅周边工具集合
 
-- [CatVod](https://pcoof.com/git/https://github.com/catvod/CatVodOpen): 猫影视
 - [Xiaoya-convert](https://github.com/ypq123456789/xiaoya-convert): 自动批量将阿里云盘分享链接转换为小雅`alishare_list.txt`中的格式
 - [Xiaoyahelper](https://github.com/DDS-Derek/xiaoya-alist/tree/master/xiaoyahelper): 一劳永逸的小雅转存清理工具
 - [Alist-TVBox](https://hub.docker.com/r/haroldli/alist-tvbox): 一个基于`AList`和`xiaoya`的`TVBox`管理工具
 - [`strm`文件生成](https://xiaoyaliu.notion.site/strm-2c8d136ceb37445fb6c0222eafb966ce): 小雅官方提供的一键生成`strm`文件脚本
 - [monlor/docker-xiaoya](https://github.com/monlor/docker-xiaoya): Docker Compose 方式一键部署小雅全家桶
+- [907739769/xiaoya-sync](https://github.com/907739769/xiaoya-sync): Java 编写的小雅元数据爬虫
 - [AI老G 脚本推荐](https://b23.tv/3Zo0IvD)
   - 小雅全家桶安装脚本（支持AI老G版小雅Alist安装，Jellyfin安装，快速Emby安装）:
     ```shell
@@ -257,6 +263,7 @@ Docker镜像源选择 -> 9 6
 - [Portainer](https://github.com/portainer/portainer)
 - [AI老G](https://space.bilibili.com/252166818)
 - [monlor](https://link.monlor.com)
+- [Rik](https://github.com/Rik-F5)
 
 <a href="https://github.com/DDS-Derek/xiaoya-alist/graphs/contributors"><img src="https://contrib.rocks/image?repo=DDS-Derek/xiaoya-alist"></a>
 
